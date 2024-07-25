@@ -40,16 +40,20 @@ get_token() {
 }
 
 list_folders() {
-  local TOKEN
-  local RESP
-  local PAGE
-  local HAS_MORE
+  local TOKEN RESP PAGE HAS_MORE ITEM I
   HAS_MORE="true"
   PAGE=0
   TOKEN=$(get_token)
   while [ "$HAS_MORE" = "true" ]; do
     echo "page $PAGE"
     RESP=$(curl "http://localhost:41184/folders?token=$TOKEN&page=$PAGE")
+    ITEM="undefined"
+    I=0
+    while ! [ "$ITEM" = "null" ]; do
+      ITEM=$(echo "$RESP" | jq ".items[$I]")
+      echo "$ITEM"
+      I=$((I + 1))
+    done
     HAS_MORE=$(echo "$RESP" | jq '.has_more')
     PAGE=$((PAGE + 1))
   done
