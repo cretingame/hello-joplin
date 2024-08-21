@@ -94,3 +94,22 @@ func listJoplinItems(token string) (items []JoplinItem, err error) {
 
 	return items, err
 }
+
+// TODO: to be tested
+func readJoplinNote(token string, id string) (content []byte, err error) {
+	req := fmt.Sprintf("%s/notes/%s?token=%s", host, id, token)
+	response, err := http.Get(req)
+	if err != nil {
+		return
+	}
+
+	bs, err := io.ReadAll(response.Body)
+
+	var v any
+
+	json.Unmarshal(bs, &v)
+
+	fmt.Println(v)
+
+	return
+}
