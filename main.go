@@ -9,7 +9,10 @@ import (
 	"strings"
 )
 
-const tokenLocation = "./token"
+const (
+	tokenLocation = "./token"
+	host          = "http://localhost:41184"
+)
 
 // https://joplinapp.org/fr/help/api/references/rest_api/#properties-1
 type JoplinPage struct {
@@ -42,9 +45,12 @@ func main() {
 	}
 	fmt.Printf("token <%s>\n", token)
 
-	err = listJoplinItems(token)
+	items, err := listJoplinItems(token)
 	if err != nil {
 		panic(err)
+	}
+	for i, item := range items {
+		fmt.Println(i, item)
 	}
 }
 
@@ -60,52 +66,31 @@ func readToken() (string, error) {
 	return str, err
 }
 
-func listJoplinItems(token string) error {
+func listJoplinItems(token string) (items []JoplinItem, err error) {
 	hasMore := true
 	page := 0
 
 	for hasMore {
 		// TODO: url constant
-		req := fmt.Sprintf("http://localhost:41184/folders?token=%s&page=%d", token, page)
-		fmt.Println(req)
+		req := fmt.Sprintf("%s/folders?token=%s&page=%d", host, token, page)
 		response, err := http.Get(req)
 		if err != nil {
-			return err
+			return items, err
 		}
 
 		bs, err := io.ReadAll(response.Body)
 		if err != nil {
-			return err
+			return items, err
 		}
 
-		var v map[string]any
-		var v2 JoplinPage
-		json.Unmarshal(bs, &v)
-		json.Unmarshal(bs, &v2)
+		var jPage JoplinPage
+		json.Unmarshal(bs, &jPage)
 
-		// fmt.Println(v)
-		// fmt.Println(v["has_more"])
-		// fmt.Println(v["items"])
-		// item structure
-		// items := []item{}
-		// map[deleted_time:0 id:2c378d6176a446b5bfa4adfb89ffe27c parent_id:df457761ed9c422f9826266e881ea68e title:Shared Library]
+		hasMore = jPage.Has_more
 
-		fmt.Println("v2", v2)
-
-		items := v["items"].([]any)
-
-		for i, item := range items {
-			fmt.Println(i, item)
-		}
-
-		var ok bool
-		hasMore, ok = v["has_more"].(bool)
-		if !ok {
-			hasMore = false
-		}
-
+		items = append(items, jPage.Items...)
 		page++
 	}
 
-	return nil
+	return items, err
 }
