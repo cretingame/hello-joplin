@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -37,29 +38,45 @@ func readToken() (string, error) {
 
 func listJoplinItems(token string) error {
 	hasMore := true
+	page := 0
 
 	for hasMore {
 		// TODO: url constant
-		req := fmt.Sprintf("http://localhost:41184/folders?token=%s&page=%d", token, 0)
+		req := fmt.Sprintf("http://localhost:41184/folders?token=%s&page=%d", token, page)
 		fmt.Println(req)
 		response, err := http.Get(req)
 		if err != nil {
 			return err
 		}
 
-		fmt.Println(response)
-
 		bs, err := io.ReadAll(response.Body)
 		if err != nil {
 			return err
 		}
 
-		str := string(bs)
+		var v map[string]any
+		json.Unmarshal(bs, &v)
 
-		fmt.Println(str)
+		// fmt.Println(v)
+		// fmt.Println(v["has_more"])
+		// fmt.Println(v["items"])
+		// item structure
+		// items := []item{}
+		// map[deleted_time:0 id:2c378d6176a446b5bfa4adfb89ffe27c parent_id:df457761ed9c422f9826266e881ea68e title:Shared Library]
 
-		// TODO: should get information from the request
-		hasMore = false
+		items := v["items"].([]any)
+
+		for i, item := range items {
+			fmt.Println(i, item)
+		}
+
+		var ok bool
+		hasMore, ok = v["has_more"].(bool)
+		if !ok {
+			hasMore = false
+		}
+
+		page++
 	}
 
 	return nil
