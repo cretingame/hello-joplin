@@ -11,6 +11,30 @@ import (
 
 const tokenLocation = "./token"
 
+// https://joplinapp.org/fr/help/api/references/rest_api/#properties-1
+type JoplinPage struct {
+	Has_more bool
+	Items    []JoplinItem
+}
+
+type JoplinItem struct {
+	Id                     string
+	Parent_id              string
+	Title                  string
+	Created_time           int // When the folder was created.
+	Updated_time           int // When the folder was last updated.
+	User_created_time      int // When the folder was created. It may differ from created_time as it can be manually set by the user.
+	User_updated_time      int // When the folder was last updated. It may differ from updated_time as it can be manually set by the user.
+	Encryption_cipher_text string
+	Encryption_applied     int
+	Is_shared              int
+	Share_id               string
+	Master_key_id          string
+	Icon                   string
+	User_data              string
+	Deleted_time           int
+}
+
 func main() {
 	token, err := readToken()
 	if err != nil {
@@ -55,7 +79,9 @@ func listJoplinItems(token string) error {
 		}
 
 		var v map[string]any
+		var v2 JoplinPage
 		json.Unmarshal(bs, &v)
+		json.Unmarshal(bs, &v2)
 
 		// fmt.Println(v)
 		// fmt.Println(v["has_more"])
@@ -63,6 +89,8 @@ func listJoplinItems(token string) error {
 		// item structure
 		// items := []item{}
 		// map[deleted_time:0 id:2c378d6176a446b5bfa4adfb89ffe27c parent_id:df457761ed9c422f9826266e881ea68e title:Shared Library]
+
+		fmt.Println("v2", v2)
 
 		items := v["items"].([]any)
 
