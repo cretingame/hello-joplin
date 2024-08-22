@@ -45,13 +45,27 @@ func main() {
 	}
 	fmt.Printf("token <%s>\n", token)
 
-	items, err := listJoplinItems(token)
+	folders, err := listJoplinItems(token, "folders")
 	if err != nil {
 		panic(err)
 	}
-	for i, item := range items {
+	for i, folder := range folders {
+		fmt.Println(i, folder)
+	}
+
+	notes, err := listJoplinItems(token, "notes")
+	if err != nil {
+		panic(err)
+	}
+	for i, item := range notes {
 		fmt.Println(i, item)
 	}
+
+	content, err := readJoplinNote(token, notes[0].Id)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(content)
 }
 
 func saveToken() {
@@ -66,13 +80,13 @@ func readToken() (string, error) {
 	return str, err
 }
 
-func listJoplinItems(token string) (items []JoplinItem, err error) {
+func listJoplinItems(token string, joplinType string) (items []JoplinItem, err error) {
 	hasMore := true
 	page := 0
 
 	for hasMore {
 		// TODO: url constant
-		req := fmt.Sprintf("%s/folders?token=%s&page=%d", host, token, page)
+		req := fmt.Sprintf("%s/%s?token=%s&page=%d", host, joplinType, token, page)
 		response, err := http.Get(req)
 		if err != nil {
 			return items, err
@@ -84,7 +98,10 @@ func listJoplinItems(token string) (items []JoplinItem, err error) {
 		}
 
 		var jPage JoplinPage
-		json.Unmarshal(bs, &jPage)
+		err = json.Unmarshal(bs, &jPage)
+		if err != nil {
+			return items, err
+		}
 
 		hasMore = jPage.Has_more
 
@@ -97,19 +114,25 @@ func listJoplinItems(token string) (items []JoplinItem, err error) {
 
 // TODO: to be tested
 func readJoplinNote(token string, id string) (content []byte, err error) {
-	req := fmt.Sprintf("%s/notes/%s?token=%s", host, id, token)
+	req := fmt.Sprintf("%s/notes/%s?token=%s&fields=title,body", host, id, token)
+	fmt.Println("req", req)
 	response, err := http.Get(req)
 	if err != nil {
 		return
 	}
 
 	bs, err := io.ReadAll(response.Body)
+	if err != nil {
+		return
+	}
 
 	var v any
 
 	json.Unmarshal(bs, &v)
 
+	fmt.Println(string(bs))
 	fmt.Println(v)
+	fmt.Println("ok")
 
 	return
 }
