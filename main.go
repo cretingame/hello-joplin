@@ -61,11 +61,11 @@ func main() {
 		fmt.Println(i, item)
 	}
 
-	content, err := readJoplinNote(token, notes[0].Id)
+	note, err := readJoplinNote(token, notes[0].Id)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(content)
+	fmt.Println(note)
 }
 
 func saveToken() {
@@ -150,7 +150,7 @@ type JoplinNote struct {
 }
 
 // TODO: to be tested
-func readJoplinNote(token string, id string) (content []byte, err error) {
+func readJoplinNote(token string, id string) (note JoplinNote, err error) {
 	req := fmt.Sprintf("%s/notes/%s?token=%s&fields=title,body", host, id, token)
 	fmt.Println("req", req)
 	response, err := http.Get(req)
@@ -163,21 +163,53 @@ func readJoplinNote(token string, id string) (content []byte, err error) {
 		return
 	}
 
-	var v any
-	var note JoplinNote
-
-	err = json.Unmarshal(bs, &v)
-	if err != nil {
-		return
-	}
 	err = json.Unmarshal(bs, &note)
 	if err != nil {
 		return
 	}
 
-	fmt.Println(string(bs))
-	fmt.Println(v)
-	fmt.Println("ok")
-
 	return
+}
+
+type JoplinFolder struct {
+	Id                     string
+	Title                  string // The folder title.
+	Created_time           int    // When the folder was created.
+	Updated_time           int    // When the folder was last updated.
+	User_created_time      int    // When the folder was created. It may differ from created_time as it can be manually set by the user.
+	User_updated_time      int    // When the folder was last updated. It may differ from updated_time as it can be manually set by the user.
+	Encryption_cipher_text string
+	Encryption_applied     int
+	Parent_id              string
+	Is_shared              int
+	Share_id               string
+	Master_key_id          string
+	Icon                   string
+	User_data              string
+	Deleted_time           int
+}
+
+type JoplinRessource struct {
+	Id                        string
+	Title                     string // The resource title.
+	Mime                      string
+	Filename                  string
+	Created_time              int // When the resource was created.
+	Updated_time              int // When the resource was last updated.
+	User_created_time         int // When the resource was created. It may differ from created_time as it can be manually set by the user.
+	User_updated_time         int // When the resource was last updated. It may differ from updated_time as it can be manually set by the user.
+	File_extension            string
+	Encryption_cipher_text    string
+	Encryption_applied        int
+	Encryption_blob_encrypted int
+	Size                      int
+	Is_shared                 int
+	Share_id                  string
+	Master_key_id             string
+	User_data                 string
+	Blob_updated_time         int
+	Ocr_text                  string
+	Ocr_details               string
+	Ocr_status                int
+	Ocr_error                 string
 }
