@@ -75,9 +75,7 @@ func main() {
 	} else if err != nil {
 		panic(err)
 	}
-}
 
-func main_old() {
 	token, err := readToken()
 	if err != nil {
 		panic(err)
@@ -276,7 +274,6 @@ type JoplinNote struct {
 	Crop_rect              string // If an image is provided, you can also specify an optional rectangle that will be used to crop the image. In format { x: x, y: y, width: width, height: height }
 }
 
-// TODO: to be tested
 func readJoplinNote(token string, id string) (note JoplinNote, err error) {
 	req := fmt.Sprintf("%s/notes/%s?token=%s&fields=title,body", host, id, token)
 	fmt.Println("req", req)
@@ -314,6 +311,28 @@ type JoplinFolder struct {
 	Icon                   string
 	User_data              string
 	Deleted_time           int
+}
+
+// TODO: to be tested
+func readJoplinFolder(token string, id string) (folder JoplinFolder, err error) {
+	req := fmt.Sprintf("%s/folders/%s?token=%s&fields=title,body", host, id, token)
+	fmt.Println("req", req)
+	response, err := http.Get(req)
+	if err != nil {
+		return
+	}
+
+	bs, err := io.ReadAll(response.Body)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(bs, &folder)
+	if err != nil {
+		return
+	}
+
+	return
 }
 
 type JoplinRessource struct {
