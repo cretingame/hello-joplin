@@ -41,11 +41,40 @@ type JoplinItem struct {
 }
 
 func main() {
-	authToken, err := getAuthToken()
-	if err != nil {
+	_, err := os.Stat(authTokenLocation)
+	if os.IsNotExist(err) {
+		authToken, err := getAuthToken()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("create authToken file with token:", authToken)
+		err = saveAuthToken(authToken)
+		if err != nil {
+			panic(err)
+		}
+	} else if err != nil {
 		panic(err)
 	}
-	fmt.Println("authToken:", authToken)
+
+	_, err = os.Stat(tokenLocation)
+	if os.IsNotExist(err) {
+		authToken, err := readAuthToken()
+		if err != nil {
+			panic(err)
+		}
+
+		token, err := getToken(authToken)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("create token file with token:", token)
+		err = saveToken(token)
+		if err != nil {
+			panic(err)
+		}
+	} else if err != nil {
+		panic(err)
+	}
 }
 
 func main_old() {
@@ -124,10 +153,10 @@ func readAuthToken() (string, error) {
 }
 
 // https://joplinapp.org/fr/help/dev/spec/clipper_auth
-func getToken() (token string, err error) {
+func getToken(authToken string) (token string, err error) {
 	var v map[string]string
 
-	req := fmt.Sprintf("%s/auth?token=%s", host, token)
+	req := fmt.Sprintf("%s/auth/check?auth_token=%s", host, authToken)
 	resp, err := http.Get(req)
 	if err != nil {
 		return
