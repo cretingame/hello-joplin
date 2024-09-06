@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -39,6 +40,14 @@ type JoplinItem struct {
 }
 
 func main() {
+	authToken, err := getAuthToken()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("authToken:", authToken)
+}
+
+func main_old() {
 	token, err := readToken()
 	if err != nil {
 		panic(err)
@@ -68,7 +77,35 @@ func main() {
 	fmt.Println(note)
 }
 
-func saveToken() {
+// curl -X POST "$ADDRESS/auth" | jq '.auth_token' | sed 's/\"//g'
+func getAuthToken() (authToken string, err error) {
+	var body io.Reader
+	var v map[string]string
+	var ok bool
+
+	resp, err := http.Post(host+"/auth", "application/json", body)
+
+	bs, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(bs, &v)
+	if err != nil {
+		return
+	}
+
+	authToken, ok = v["auth_token"]
+	if !ok {
+		err = errors.New("parsing auth JSON failed")
+		return
+	}
+
+	return
+}
+
+// https://joplinapp.org/fr/help/dev/spec/clipper_auth
+func saveToken(authToken string) {
 	// TODO: implemented in the bash script
 }
 

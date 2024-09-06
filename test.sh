@@ -12,12 +12,14 @@ post_example() {
   curl -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$ADDRESS"
 }
 
+# https://joplinapp.org/fr/help/dev/spec/clipper_auth
 # return
 # {"auth_token":"EvEiLZa0NRxKhaV6d1EoQA"}
 get_auth_token() {
   curl -X POST "$ADDRESS/auth" | jq '.auth_token' | sed 's/\"//g'
 }
 
+# https://joplinapp.org/fr/help/dev/spec/clipper_auth
 # save the token in then token file in the current directory
 save_token() {
   RESP=$(curl -X POST "$ADDRESS/auth")
