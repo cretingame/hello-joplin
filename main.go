@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	tokenLocation = "./token"
-	host          = "http://localhost:41184"
+	authTokenLocation = "./auth_token"
+	tokenLocation     = "./token"
+	host              = "http://localhost:41184"
 )
 
 // https://joplinapp.org/fr/help/api/references/rest_api/#properties-1
@@ -84,6 +85,9 @@ func getAuthToken() (authToken string, err error) {
 	var ok bool
 
 	resp, err := http.Post(host+"/auth", "application/json", body)
+	if err != nil {
+		return
+	}
 
 	bs, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -104,9 +108,66 @@ func getAuthToken() (authToken string, err error) {
 	return
 }
 
+func saveAuthToken(authToken string) error {
+	err := os.WriteFile(authTokenLocation, []byte(authToken), 0644)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func readAuthToken() (string, error) {
+	bs, err := os.ReadFile(authTokenLocation)
+	str := string(bs)
+	str = strings.Trim(str, "\n")
+	return str, err
+}
+
 // https://joplinapp.org/fr/help/dev/spec/clipper_auth
-func saveToken(authToken string) {
-	// TODO: implemented in the bash script
+func getToken() (token string, err error) {
+	var v map[string]string
+
+	req := fmt.Sprintf("%s/auth?token=%s", host, token)
+	resp, err := http.Get(req)
+	if err != nil {
+		return
+	}
+
+	bs, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(bs, &v)
+	if err != nil {
+		return
+	}
+
+	status, ok := v["status"]
+	if !ok {
+		err = errors.New("parsing status from token JSON failed")
+		return
+	}
+	if status != "accepted" {
+		err = fmt.Errorf("getToken status: %s", status)
+		return
+	}
+
+	token, ok = v["token"]
+	if !ok {
+		err = errors.New("parsing token from token JSON failed")
+		return
+	}
+
+	return
+}
+
+func saveToken(token string) error {
+	err := os.WriteFile(tokenLocation, []byte(token), 0644)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // getToken in the bash script
