@@ -28,6 +28,14 @@ func main() {
 		panic(err)
 	}
 
+	// NOTE: for benchmark
+	// for _, note := range notes {
+	// 	_, err := joplin.GetNote(host, token, note.Id)
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
+	// }
+
 	items = append(items, folders...)
 	items = append(items, notes...)
 

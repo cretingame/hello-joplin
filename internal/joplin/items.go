@@ -147,7 +147,6 @@ func GetItems(host string, token string, joplinType string) (items []Item, err e
 
 func GetNote(host string, token string, id string) (note Note, err error) {
 	req := fmt.Sprintf("%s/notes/%s?token=%s&fields=title,body", host, id, token)
-	fmt.Println("req", req)
 	response, err := http.Get(req)
 	if err != nil {
 		return
