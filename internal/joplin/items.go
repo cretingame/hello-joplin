@@ -8,12 +8,12 @@ import (
 )
 
 // https://joplinapp.org/fr/help/api/references/rest_api/#properties-1
-type JoplinPage struct {
+type Page struct {
 	Has_more bool
-	Items    []JoplinItem
+	Items    []Item
 }
 
-type JoplinItem struct {
+type Item struct {
 	Id                     string
 	Parent_id              string
 	Title                  string
@@ -29,9 +29,12 @@ type JoplinItem struct {
 	Icon                   string
 	User_data              string
 	Deleted_time           int
+
+	// Added for building tree
+	Children []*Item
 }
 
-type JoplinNote struct {
+type Note struct {
 	Id                     string
 	Parent_id              string // ID of the notebook that contains this note. Change this ID to move the note to a different notebook.
 	Title                  string // The note title.
@@ -68,7 +71,7 @@ type JoplinNote struct {
 	Crop_rect              string // If an image is provided, you can also specify an optional rectangle that will be used to crop the image. In format { x: x, y: y, width: width, height: height }
 }
 
-type JoplinFolder struct {
+type Folder struct {
 	Id                     string
 	Title                  string // The folder title.
 	Created_time           int    // When the folder was created.
@@ -86,7 +89,7 @@ type JoplinFolder struct {
 	Deleted_time           int
 }
 
-type JoplinRessource struct {
+type Ressource struct {
 	Id                        string
 	Title                     string // The resource title.
 	Mime                      string
@@ -111,7 +114,7 @@ type JoplinRessource struct {
 	Ocr_error                 string
 }
 
-func GetJoplinItems(host string, token string, joplinType string) (items []JoplinItem, err error) {
+func GetItems(host string, token string, joplinType string) (items []Item, err error) {
 	hasMore := true
 	page := 0
 
@@ -127,7 +130,7 @@ func GetJoplinItems(host string, token string, joplinType string) (items []Jopli
 			return items, err
 		}
 
-		var jPage JoplinPage
+		var jPage Page
 		err = json.Unmarshal(bs, &jPage)
 		if err != nil {
 			return items, err
@@ -142,7 +145,7 @@ func GetJoplinItems(host string, token string, joplinType string) (items []Jopli
 	return items, err
 }
 
-func GetJoplinNote(host string, token string, id string) (note JoplinNote, err error) {
+func GetNote(host string, token string, id string) (note Note, err error) {
 	req := fmt.Sprintf("%s/notes/%s?token=%s&fields=title,body", host, id, token)
 	fmt.Println("req", req)
 	response, err := http.Get(req)
@@ -164,7 +167,7 @@ func GetJoplinNote(host string, token string, id string) (note JoplinNote, err e
 }
 
 // TODO: to be tested
-func GetJoplinFolder(host string, token string, id string) (folder JoplinFolder, err error) {
+func GetFolder(host string, token string, id string) (folder Folder, err error) {
 	req := fmt.Sprintf("%s/folders/%s?token=%s&fields=title,body", host, id, token)
 	fmt.Println("req", req)
 	response, err := http.Get(req)
