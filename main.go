@@ -18,7 +18,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("create authToken file with token:", authToken)
 
 	_, err = os.Stat(tokenLocation)
 	if os.IsNotExist(err) {
@@ -31,8 +30,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("create token file with token:", token)
-		err = saveToken(token)
+		err = os.WriteFile(tokenLocation, []byte(token), 0644)
 		if err != nil {
 			panic(err)
 		}
@@ -40,10 +38,12 @@ func main() {
 		panic(err)
 	}
 
-	token, err := readToken()
+	bs, err := os.ReadFile(tokenLocation)
 	if err != nil {
 		panic(err)
 	}
+	token := strings.Trim(string(bs), "\n")
+
 	fmt.Printf("token <%s>\n", token)
 
 	// end of authentification
@@ -69,24 +69,4 @@ func main() {
 		panic(err)
 	}
 	fmt.Println(note)
-}
-
-// NOTE: That's an useless abstraction
-// OPTIM: I should use a parameter instead of a constant
-func saveToken(token string) error {
-	err := os.WriteFile(tokenLocation, []byte(token), 0644)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// NOTE: That's an useless abstraction
-// OPTIM: I should use a parameter instead of a constant
-// getToken in the bash script
-func readToken() (string, error) {
-	bs, err := os.ReadFile(tokenLocation)
-	str := string(bs)
-	str = strings.Trim(str, "\n")
-	return str, err
 }
