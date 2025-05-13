@@ -1,19 +1,10 @@
-package main
+package joplin
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"os"
-	"strings"
-)
-
-const (
-	authTokenLocation = "./auth_token"
-	tokenLocation     = "./token"
-	host              = "http://localhost:41184"
 )
 
 // https://joplinapp.org/fr/help/api/references/rest_api/#properties-1
@@ -38,212 +29,6 @@ type JoplinItem struct {
 	Icon                   string
 	User_data              string
 	Deleted_time           int
-}
-
-func main() {
-	_, err := os.Stat(authTokenLocation)
-	if os.IsNotExist(err) {
-		authToken, err := getAuthToken()
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println("create authToken file with token:", authToken)
-		err = saveAuthToken(authToken)
-		if err != nil {
-			panic(err)
-		}
-	} else if err != nil {
-		panic(err)
-	}
-
-	_, err = os.Stat(tokenLocation)
-	if os.IsNotExist(err) {
-		authToken, err := readAuthToken()
-		if err != nil {
-			panic(err)
-		}
-
-		token, err := getToken(authToken)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println("create token file with token:", token)
-		err = saveToken(token)
-		if err != nil {
-			panic(err)
-		}
-	} else if err != nil {
-		panic(err)
-	}
-
-	token, err := readToken()
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("token <%s>\n", token)
-
-	folders, err := getJoplinItems(token, "folders")
-	if err != nil {
-		panic(err)
-	}
-	for i, folder := range folders {
-		fmt.Println(i, folder)
-	}
-
-	notes, err := getJoplinItems(token, "notes")
-	if err != nil {
-		panic(err)
-	}
-	for i, item := range notes {
-		fmt.Println(i, item)
-	}
-
-	note, err := getJoplinNote(token, notes[0].Id)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(note)
-}
-
-// curl -X POST "$ADDRESS/auth" | jq '.auth_token' | sed 's/\"//g'
-func getAuthToken() (authToken string, err error) {
-	var body io.Reader
-	var v map[string]string
-	var ok bool
-
-	resp, err := http.Post(host+"/auth", "application/json", body)
-	if err != nil {
-		return
-	}
-
-	bs, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
-
-	err = json.Unmarshal(bs, &v)
-	if err != nil {
-		return
-	}
-
-	authToken, ok = v["auth_token"]
-	if !ok {
-		err = errors.New("parsing auth JSON failed")
-		return
-	}
-
-	return
-}
-
-// NOTE: That's an useless abstraction
-// OPTIM: I should use a parameter instead of a constant
-func saveAuthToken(authToken string) error {
-	err := os.WriteFile(authTokenLocation, []byte(authToken), 0644)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// NOTE: That's an useless abstraction
-// OPTIM: I should use a parameter instead of a constant
-func readAuthToken() (string, error) {
-	bs, err := os.ReadFile(authTokenLocation)
-	str := string(bs)
-	str = strings.Trim(str, "\n")
-	return str, err
-}
-
-// https://joplinapp.org/fr/help/dev/spec/clipper_auth
-func getToken(authToken string) (token string, err error) {
-	var v map[string]string
-
-	// OPTIM: Instead of using Sprintf, I should concatanate strings
-	req := fmt.Sprintf("%s/auth/check?auth_token=%s", host, authToken)
-	resp, err := http.Get(req)
-	if err != nil {
-		return
-	}
-
-	bs, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
-
-	err = json.Unmarshal(bs, &v)
-	if err != nil {
-		return
-	}
-
-	status, ok := v["status"]
-	if !ok {
-		err = errors.New("parsing status from token JSON failed")
-		return
-	}
-	if status != "accepted" {
-		err = fmt.Errorf("getToken status: %s", status)
-		return
-	}
-
-	token, ok = v["token"]
-	if !ok {
-		err = errors.New("parsing token from token JSON failed")
-		return
-	}
-
-	return
-}
-
-// NOTE: That's an useless abstraction
-// OPTIM: I should use a parameter instead of a constant
-func saveToken(token string) error {
-	err := os.WriteFile(tokenLocation, []byte(token), 0644)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// NOTE: That's an useless abstraction
-// OPTIM: I should use a parameter instead of a constant
-// getToken in the bash script
-func readToken() (string, error) {
-	bs, err := os.ReadFile(tokenLocation)
-	str := string(bs)
-	str = strings.Trim(str, "\n")
-	return str, err
-}
-
-func getJoplinItems(token string, joplinType string) (items []JoplinItem, err error) {
-	hasMore := true
-	page := 0
-
-	for hasMore {
-		// TODO: url constant
-		req := fmt.Sprintf("%s/%s?token=%s&page=%d", host, joplinType, token, page)
-		response, err := http.Get(req)
-		if err != nil {
-			return items, err
-		}
-
-		bs, err := io.ReadAll(response.Body)
-		if err != nil {
-			return items, err
-		}
-
-		var jPage JoplinPage
-		err = json.Unmarshal(bs, &jPage)
-		if err != nil {
-			return items, err
-		}
-
-		hasMore = jPage.Has_more
-
-		items = append(items, jPage.Items...)
-		page++
-	}
-
-	return items, err
 }
 
 type JoplinNote struct {
@@ -283,27 +68,6 @@ type JoplinNote struct {
 	Crop_rect              string // If an image is provided, you can also specify an optional rectangle that will be used to crop the image. In format { x: x, y: y, width: width, height: height }
 }
 
-func getJoplinNote(token string, id string) (note JoplinNote, err error) {
-	req := fmt.Sprintf("%s/notes/%s?token=%s&fields=title,body", host, id, token)
-	fmt.Println("req", req)
-	response, err := http.Get(req)
-	if err != nil {
-		return
-	}
-
-	bs, err := io.ReadAll(response.Body)
-	if err != nil {
-		return
-	}
-
-	err = json.Unmarshal(bs, &note)
-	if err != nil {
-		return
-	}
-
-	return
-}
-
 type JoplinFolder struct {
 	Id                     string
 	Title                  string // The folder title.
@@ -320,28 +84,6 @@ type JoplinFolder struct {
 	Icon                   string
 	User_data              string
 	Deleted_time           int
-}
-
-// TODO: to be tested
-func getJoplinFolder(token string, id string) (folder JoplinFolder, err error) {
-	req := fmt.Sprintf("%s/folders/%s?token=%s&fields=title,body", host, id, token)
-	fmt.Println("req", req)
-	response, err := http.Get(req)
-	if err != nil {
-		return
-	}
-
-	bs, err := io.ReadAll(response.Body)
-	if err != nil {
-		return
-	}
-
-	err = json.Unmarshal(bs, &folder)
-	if err != nil {
-		return
-	}
-
-	return
 }
 
 type JoplinRessource struct {
@@ -367,4 +109,78 @@ type JoplinRessource struct {
 	Ocr_details               string
 	Ocr_status                int
 	Ocr_error                 string
+}
+
+func GetJoplinItems(host string, token string, joplinType string) (items []JoplinItem, err error) {
+	hasMore := true
+	page := 0
+
+	for hasMore {
+		req := fmt.Sprintf("%s/%s?token=%s&page=%d", host, joplinType, token, page)
+		response, err := http.Get(req)
+		if err != nil {
+			return items, err
+		}
+
+		bs, err := io.ReadAll(response.Body)
+		if err != nil {
+			return items, err
+		}
+
+		var jPage JoplinPage
+		err = json.Unmarshal(bs, &jPage)
+		if err != nil {
+			return items, err
+		}
+
+		hasMore = jPage.Has_more
+
+		items = append(items, jPage.Items...)
+		page++
+	}
+
+	return items, err
+}
+
+func GetJoplinNote(host string, token string, id string) (note JoplinNote, err error) {
+	req := fmt.Sprintf("%s/notes/%s?token=%s&fields=title,body", host, id, token)
+	fmt.Println("req", req)
+	response, err := http.Get(req)
+	if err != nil {
+		return
+	}
+
+	bs, err := io.ReadAll(response.Body)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(bs, &note)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+// TODO: to be tested
+func GetJoplinFolder(host string, token string, id string) (folder JoplinFolder, err error) {
+	req := fmt.Sprintf("%s/folders/%s?token=%s&fields=title,body", host, id, token)
+	fmt.Println("req", req)
+	response, err := http.Get(req)
+	if err != nil {
+		return
+	}
+
+	bs, err := io.ReadAll(response.Body)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(bs, &folder)
+	if err != nil {
+		return
+	}
+
+	return
 }
