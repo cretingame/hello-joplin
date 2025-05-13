@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"strings"
+	"time"
 )
 
 var (
@@ -13,8 +16,41 @@ var (
 	ErrCheckJoplin = errors.New("please check jopling application to grant api access")
 )
 
+func Authenticate(host string, tokenLocation string) (token string, err error) {
+	authToken, err := getAuthToken(host)
+	if err != nil {
+		return
+	}
+
+	_, err = os.Stat(tokenLocation)
+	if os.IsNotExist(err) {
+		token, err = getToken(host, authToken)
+		for err == ErrCheckJoplin {
+			fmt.Println("Please check joplin application to grant access")
+			time.Sleep(1000 * time.Millisecond)
+			token, err = getToken(host, authToken)
+		}
+		if err != nil {
+			return
+		}
+		err = os.WriteFile(tokenLocation, []byte(token), 0644)
+		if err != nil {
+			return
+		}
+	} else if err != nil {
+		return
+	}
+
+	bs, err := os.ReadFile(tokenLocation)
+	if err != nil {
+		return
+	}
+	token = strings.Trim(string(bs), "\n")
+	return
+}
+
 // curl -X POST "$ADDRESS/auth" | jq '.auth_token' | sed 's/\"//g'
-func GetAuthToken(host string) (authToken string, err error) {
+func getAuthToken(host string) (authToken string, err error) {
 	var body io.Reader
 	var v map[string]string
 	var ok bool
@@ -44,7 +80,7 @@ func GetAuthToken(host string) (authToken string, err error) {
 }
 
 // https://joplinapp.org/fr/help/dev/spec/clipper_auth
-func GetToken(host string, authToken string) (token string, err error) {
+func getToken(host string, authToken string) (token string, err error) {
 	var v map[string]string
 
 	req := fmt.Sprintf("%s/auth/check?auth_token=%s", host, authToken)
