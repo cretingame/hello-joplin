@@ -5,38 +5,29 @@ import (
 	"hello-joplin/internal/joplin"
 	"os"
 	"strings"
+	"time"
 )
 
 const (
-	authTokenLocation = "./auth_token"
-	tokenLocation     = "./token"
-	host              = "http://localhost:41184"
+	tokenLocation = "./token"
+	host          = "http://localhost:41184"
 )
 
 func main() {
-	_, err := os.Stat(authTokenLocation)
-	if os.IsNotExist(err) {
-		authToken, err := joplin.GetAuthToken(host)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println("create authToken file with token:", authToken)
-		err = saveAuthToken(authToken)
-		if err != nil {
-			panic(err)
-		}
-	} else if err != nil {
+	authToken, err := joplin.GetAuthToken(host)
+	if err != nil {
 		panic(err)
 	}
+	fmt.Println("create authToken file with token:", authToken)
 
 	_, err = os.Stat(tokenLocation)
 	if os.IsNotExist(err) {
-		authToken, err := readAuthToken()
-		if err != nil {
-			panic(err)
-		}
-
 		token, err := joplin.GetToken(host, authToken)
+		for err == joplin.ErrCheckJoplin {
+			fmt.Println("Please check joplin application to grant access")
+			time.Sleep(1000 * time.Millisecond)
+			token, err = joplin.GetToken(host, authToken)
+		}
 		if err != nil {
 			panic(err)
 		}
@@ -54,6 +45,8 @@ func main() {
 		panic(err)
 	}
 	fmt.Printf("token <%s>\n", token)
+
+	// end of authentification
 
 	folders, err := joplin.GetJoplinItems(host, token, "folders")
 	if err != nil {
@@ -76,25 +69,6 @@ func main() {
 		panic(err)
 	}
 	fmt.Println(note)
-}
-
-// NOTE: That's an useless abstraction
-// OPTIM: I should use a parameter instead of a constant
-func saveAuthToken(authToken string) error {
-	err := os.WriteFile(authTokenLocation, []byte(authToken), 0644)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// NOTE: That's an useless abstraction
-// OPTIM: I should use a parameter instead of a constant
-func readAuthToken() (string, error) {
-	bs, err := os.ReadFile(authTokenLocation)
-	str := string(bs)
-	str = strings.Trim(str, "\n")
-	return str, err
 }
 
 // NOTE: That's an useless abstraction

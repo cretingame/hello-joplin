@@ -8,6 +8,11 @@ import (
 	"net/http"
 )
 
+var (
+	ErrParsing     = errors.New("parsing failed")
+	ErrCheckJoplin = errors.New("please check jopling application to grant api access")
+)
+
 // curl -X POST "$ADDRESS/auth" | jq '.auth_token' | sed 's/\"//g'
 func GetAuthToken(host string) (authToken string, err error) {
 	var body io.Reader
@@ -31,7 +36,7 @@ func GetAuthToken(host string) (authToken string, err error) {
 
 	authToken, ok = v["auth_token"]
 	if !ok {
-		err = errors.New("parsing auth JSON failed")
+		err = ErrParsing
 		return
 	}
 
@@ -60,17 +65,21 @@ func GetToken(host string, authToken string) (token string, err error) {
 
 	status, ok := v["status"]
 	if !ok {
-		err = errors.New("parsing status from token JSON failed")
+		err = ErrParsing
 		return
 	}
-	if status != "accepted" {
-		err = fmt.Errorf("getToken status: %s", status)
+	if status == "waiting" {
+		err = ErrCheckJoplin
+		return
+
+	} else if status != "accepted" {
+		err = fmt.Errorf("unhanled status: %s", status)
 		return
 	}
 
 	token, ok = v["token"]
 	if !ok {
-		err = errors.New("parsing token from token JSON failed")
+		err = ErrParsing
 		return
 	}
 
