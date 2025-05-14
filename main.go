@@ -93,22 +93,23 @@ func (r *JoplinRoot) OnAdd(ctx context.Context) {
 
 	tree := joplin.BuildTree(r.items)
 
-	for i := range tree {
-		item := tree[i]
-		folderInode := r.NewPersistentInode(
-			ctx, &fs.Inode{}, fs.StableAttr{Mode: syscall.S_IFDIR})
-		r.AddChild(item.Title, folderInode, false)
-
-		for j := range item.Children {
-			child := item.Children[j]
-			childInode := r.NewPersistentInode(
-				ctx, &fs.Inode{}, fs.StableAttr{Mode: syscall.S_IFDIR})
-			folderInode.AddChild(child.Title, childInode, false)
-
-		}
-	}
+	addFolder(ctx, &r.Inode, tree)
 
 	log.Println("Add finished")
+}
+
+func addFolder(ctx context.Context, parentInode *fs.Inode, items []*joplin.Item) {
+	for i := range items {
+		child := items[i]
+
+		// TODO: differenciate files and folder
+		childInode := parentInode.NewPersistentInode(
+			ctx, &fs.Inode{}, fs.StableAttr{Mode: syscall.S_IFDIR})
+
+		parentInode.AddChild(child.Title, childInode, false)
+
+		addFolder(ctx, childInode, child.Children)
+	}
 }
 
 func (r *JoplinRoot) Getattr(ctx context.Context, fh fs.FileHandle, out *fuse.AttrOut) syscall.Errno {
