@@ -8,12 +8,12 @@ import (
 )
 
 // https://joplinapp.org/fr/help/api/references/rest_api/#properties-1
-type Page struct {
+type PageResponse struct {
 	Has_more bool
-	Items    []Item
+	Items    []ItemResponse
 }
 
-type Item struct {
+type ItemResponse struct {
 	Id                     string
 	Parent_id              string
 	Title                  string
@@ -31,10 +31,10 @@ type Item struct {
 	Deleted_time           int
 
 	// Added for building tree
-	Children []*Item
+	Children []*ItemResponse
 }
 
-type Note struct {
+type NoteResponse struct {
 	Id                     string
 	Parent_id              string // ID of the notebook that contains this note. Change this ID to move the note to a different notebook.
 	Title                  string // The note title.
@@ -71,7 +71,7 @@ type Note struct {
 	Crop_rect              string // If an image is provided, you can also specify an optional rectangle that will be used to crop the image. In format { x: x, y: y, width: width, height: height }
 }
 
-type Folder struct {
+type FolderResponse struct {
 	Id                     string
 	Title                  string // The folder title.
 	Created_time           int    // When the folder was created.
@@ -89,7 +89,7 @@ type Folder struct {
 	Deleted_time           int
 }
 
-type Ressource struct {
+type RessourceResponse struct {
 	Id                        string
 	Title                     string // The resource title.
 	Mime                      string
@@ -114,7 +114,7 @@ type Ressource struct {
 	Ocr_error                 string
 }
 
-func GetItems(host string, token string, joplinType string) (items []Item, err error) {
+func GetItems(host string, token string, joplinType string) (items []ItemResponse, err error) {
 	hasMore := true
 	page := 0
 
@@ -130,7 +130,7 @@ func GetItems(host string, token string, joplinType string) (items []Item, err e
 			return items, err
 		}
 
-		var jPage Page
+		var jPage PageResponse
 		err = json.Unmarshal(bs, &jPage)
 		if err != nil {
 			return items, err
@@ -145,7 +145,7 @@ func GetItems(host string, token string, joplinType string) (items []Item, err e
 	return items, err
 }
 
-func GetNote(host string, token string, id string) (note Note, err error) {
+func GetNote(host string, token string, id string) (note NoteResponse, err error) {
 	req := fmt.Sprintf("%s/notes/%s?token=%s&fields=title,body", host, id, token)
 	response, err := http.Get(req)
 	if err != nil {
@@ -166,7 +166,7 @@ func GetNote(host string, token string, id string) (note Note, err error) {
 }
 
 // TODO: to be tested
-func GetFolder(host string, token string, id string) (folder Folder, err error) {
+func GetFolder(host string, token string, id string) (folder FolderResponse, err error) {
 	req := fmt.Sprintf("%s/folders/%s?token=%s&fields=title,body", host, id, token)
 	fmt.Println("req", req)
 	response, err := http.Get(req)
@@ -187,9 +187,9 @@ func GetFolder(host string, token string, id string) (folder Folder, err error) 
 	return
 }
 
-func BuildTree(nodes []Item) []*Item {
-	nodeMap := make(map[string]*Item)
-	var roots []*Item
+func BuildTree(nodes []ItemResponse) []*ItemResponse {
+	nodeMap := make(map[string]*ItemResponse)
+	var roots []*ItemResponse
 
 	for i := range nodes {
 		nodeMap[nodes[i].Id] = &nodes[i]
@@ -207,7 +207,7 @@ func BuildTree(nodes []Item) []*Item {
 	return roots
 }
 
-func PrintTree(nodes []*Item, level int) {
+func PrintTree(nodes []*ItemResponse, level int) {
 	for _, node := range nodes {
 		out := ""
 		for i := 0; i < level*2; i++ {

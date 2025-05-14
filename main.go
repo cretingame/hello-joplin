@@ -23,7 +23,7 @@ var _ = (fs.NodeGetattrer)((*JoplinRoot)(nil))
 var _ = (fs.NodeOnAdder)((*JoplinRoot)(nil))
 
 func main() {
-	var items []joplin.Item
+	var items []joplin.ItemResponse
 
 	token, err := joplin.Authenticate(host, tokenLocation)
 	if err != nil {
@@ -37,11 +37,11 @@ func main() {
 	items = append(items, folders...)
 
 	// NOTE: I will add notes later because of "/" forbiden in name
-	// notes, err := joplin.GetItems(host, token, "notes")
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// items = append(items, notes...)
+	notes, err := joplin.GetItems(host, token, "notes")
+	if err != nil {
+		panic(err)
+	}
+	items = append(items, notes...)
 
 	root := JoplinRoot{
 		items: items,
@@ -71,7 +71,7 @@ func main() {
 
 type JoplinRoot struct {
 	fs.Inode
-	items []joplin.Item
+	items []joplin.ItemResponse
 }
 
 func (r *JoplinRoot) OnAdd(ctx context.Context) {
@@ -98,7 +98,7 @@ func (r *JoplinRoot) OnAdd(ctx context.Context) {
 	log.Println("Add finished")
 }
 
-func addFolder(ctx context.Context, parentInode *fs.Inode, items []*joplin.Item) {
+func addFolder(ctx context.Context, parentInode *fs.Inode, items []*joplin.ItemResponse) {
 	for i := range items {
 		child := items[i]
 
