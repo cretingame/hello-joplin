@@ -23,7 +23,7 @@ var _ = (fs.NodeGetattrer)((*JoplinRoot)(nil))
 var _ = (fs.NodeOnAdder)((*JoplinRoot)(nil))
 
 func main() {
-	var items []joplin.ItemResponse
+	var items []joplin.Node
 
 	token, err := joplin.Authenticate(host, tokenLocation)
 	if err != nil {
@@ -34,14 +34,18 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	items = append(items, folders...)
+	for i := range folders {
+		items = append(items, &folders[i])
+	}
 
 	// NOTE: I will add notes later because of "/" forbiden in name
 	notes, err := joplin.GetItems(host, token, "notes")
 	if err != nil {
 		panic(err)
 	}
-	items = append(items, notes...)
+	for i := range notes {
+		items = append(items, &notes[i])
+	}
 
 	root := JoplinRoot{
 		items: items,
@@ -50,7 +54,7 @@ func main() {
 	debug := flag.Bool("debug", false, "print debug data")
 	flag.Parse()
 	if len(flag.Args()) < 1 {
-		log.Fatal("Usage:\n  hello MOUNTPOINT")
+		log.Fatal("Usage:\n  hello-joplin MOUNTPOINT")
 	}
 	opts := &fs.Options{}
 	opts.Debug = *debug
@@ -71,7 +75,7 @@ func main() {
 
 type JoplinRoot struct {
 	fs.Inode
-	items []joplin.ItemResponse
+	items []joplin.Node
 }
 
 func (r *JoplinRoot) OnAdd(ctx context.Context) {
@@ -98,7 +102,7 @@ func (r *JoplinRoot) OnAdd(ctx context.Context) {
 	log.Println("Add finished")
 }
 
-func addFolder(ctx context.Context, parentInode *fs.Inode, items []*joplin.ItemResponse) {
+func addFolder(ctx context.Context, parentInode *fs.Inode, items []*joplin.Node) {
 	for i := range items {
 		child := items[i]
 
@@ -106,9 +110,9 @@ func addFolder(ctx context.Context, parentInode *fs.Inode, items []*joplin.ItemR
 		childInode := parentInode.NewPersistentInode(
 			ctx, &fs.Inode{}, fs.StableAttr{Mode: syscall.S_IFDIR})
 
-		parentInode.AddChild(child.Title, childInode, false)
+		parentInode.AddChild((*child).Header().Title, childInode, false)
 
-		addFolder(ctx, childInode, child.Children)
+		addFolder(ctx, childInode, (*child).Header().Children)
 	}
 }
 

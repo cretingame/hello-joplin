@@ -7,6 +7,18 @@ import (
 	"net/http"
 )
 
+type Node interface {
+	Header() ItemHeader
+	AddChild(n *Node)
+}
+
+type ItemHeader struct {
+	Id        string
+	Parent_id string
+	Title     string
+	Children  []*Node
+}
+
 // https://joplinapp.org/fr/help/api/references/rest_api/#properties-1
 type PageResponse struct {
 	Has_more bool
@@ -31,7 +43,20 @@ type ItemResponse struct {
 	Deleted_time           int
 
 	// Added for building tree
-	Children []*ItemResponse
+	Children []*Node
+}
+
+func (ir ItemResponse) Header() ItemHeader {
+	return ItemHeader{
+		Id:        ir.Id,
+		Parent_id: ir.Parent_id,
+		Title:     ir.Title,
+		Children:  ir.Children,
+	}
+}
+
+func (ir *ItemResponse) AddChild(n *Node) {
+	ir.Children = append(ir.Children, n)
 }
 
 type NoteResponse struct {
@@ -71,6 +96,15 @@ type NoteResponse struct {
 	Crop_rect              string // If an image is provided, you can also specify an optional rectangle that will be used to crop the image. In format { x: x, y: y, width: width, height: height }
 }
 
+func (nr NoteResponse) Header() ItemHeader {
+	return ItemHeader{
+		Id:        nr.Id,
+		Parent_id: nr.Parent_id,
+		Title:     nr.Title,
+		// TODO: Children
+	}
+}
+
 type FolderResponse struct {
 	Id                     string
 	Title                  string // The folder title.
@@ -87,6 +121,15 @@ type FolderResponse struct {
 	Icon                   string
 	User_data              string
 	Deleted_time           int
+}
+
+func (fr FolderResponse) Header() ItemHeader {
+	return ItemHeader{
+		Id:        fr.Id,
+		Parent_id: fr.Parent_id,
+		Title:     fr.Title,
+		// TODO: Children
+	}
 }
 
 type RessourceResponse struct {
@@ -187,34 +230,35 @@ func GetFolder(host string, token string, id string) (folder FolderResponse, err
 	return
 }
 
-func BuildTree(nodes []ItemResponse) []*ItemResponse {
-	nodeMap := make(map[string]*ItemResponse)
-	var roots []*ItemResponse
+func BuildTree(nodes []Node) []*Node {
+	nodeMap := make(map[string]*Node)
+	var roots []*Node
 
 	for i := range nodes {
-		nodeMap[nodes[i].Id] = &nodes[i]
+		nodeMap[nodes[i].Header().Id] = &nodes[i]
 	}
 
 	for i := range nodes {
-		node := nodeMap[nodes[i].Id]
-		if node.Parent_id == "" {
+		node := nodeMap[nodes[i].Header().Id]
+		if (*node).Header().Parent_id == "" {
 			roots = append(roots, node)
-		} else if parent, ok := nodeMap[node.Parent_id]; ok {
-			parent.Children = append(parent.Children, node)
+		} else if parent, ok := nodeMap[(*node).Header().Parent_id]; ok {
+			// (*parent).Header().Children = append((*parent).Header().Children, node)
+			(*parent).AddChild(node)
 		}
 	}
 
 	return roots
 }
 
-func PrintTree(nodes []*ItemResponse, level int) {
+func PrintTree(nodes []*Node, level int) {
 	for _, node := range nodes {
 		out := ""
 		for i := 0; i < level*2; i++ {
 			out = out + " "
 		}
-		out = out + node.Title
+		out = out + (*node).Header().Title
 		fmt.Println(out)
-		PrintTree(node.Children, level+1)
+		PrintTree((*node).Header().Children, level+1)
 	}
 }

@@ -38,4 +38,9 @@ func main() {
 		panic(err)
 	}
 	fmt.Println(note)
+
+	var nodes []joplin.Node
+
+	tree := joplin.BuildTree(nodes)
+	joplin.PrintTree(tree, 0)
 }
