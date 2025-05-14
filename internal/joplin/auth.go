@@ -17,13 +17,14 @@ var (
 )
 
 func Authenticate(host string, tokenLocation string) (token string, err error) {
-	authToken, err := getAuthToken(host)
-	if err != nil {
-		return
-	}
-
 	_, err = os.Stat(tokenLocation)
 	if os.IsNotExist(err) {
+		var authToken string
+		authToken, err = getAuthToken(host)
+		if err != nil {
+			return
+		}
+
 		token, err = getToken(host, authToken)
 		for err == ErrCheckJoplin {
 			fmt.Println("Please check joplin application to grant access")
