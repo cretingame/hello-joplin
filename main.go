@@ -48,9 +48,7 @@ func buildTree(nodes []joplin.Item) []*joplin.Item {
 	var roots []*joplin.Item
 
 	for i := range nodes {
-		nodeCopy := nodes[i]
-		nodeMap[nodeCopy.Id] = &nodeCopy
-		// Why the node copy ?
+		nodeMap[nodes[i].Id] = &nodes[i]
 	}
 
 	for i := range nodes {
