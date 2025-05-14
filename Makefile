@@ -1,7 +1,7 @@
 EXEC = hello-joplin
 MOUNT_POINT = /run/user/$(shell id -u)/$(EXEC)
 
-$(CURDIR)/$(EXEC):
+$(CURDIR)/$(EXEC): *.go
 	go build
 
 $(MOUNT_POINT):

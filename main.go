@@ -23,6 +23,30 @@ var _ = (fs.NodeGetattrer)((*JoplinRoot)(nil))
 var _ = (fs.NodeOnAdder)((*JoplinRoot)(nil))
 
 func main() {
+	var items []joplin.Item
+
+	token, err := joplin.Authenticate(host, tokenLocation)
+	if err != nil {
+		panic(err)
+	}
+
+	folders, err := joplin.GetItems(host, token, "folders")
+	if err != nil {
+		panic(err)
+	}
+	items = append(items, folders...)
+
+	// NOTE: I will add notes later because of "/" forbiden in name
+	// notes, err := joplin.GetItems(host, token, "notes")
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// items = append(items, notes...)
+
+	root := JoplinRoot{
+		items: items,
+	}
+
 	debug := flag.Bool("debug", false, "print debug data")
 	flag.Parse()
 	if len(flag.Args()) < 1 {
@@ -30,7 +54,7 @@ func main() {
 	}
 	opts := &fs.Options{}
 	opts.Debug = *debug
-	server, err := fs.Mount(flag.Arg(0), &JoplinRoot{}, opts)
+	server, err := fs.Mount(flag.Arg(0), &root, opts)
 	if err != nil {
 		log.Fatalf("Mount fail: %v\n", err)
 	}
@@ -43,35 +67,11 @@ func main() {
 	}()
 
 	server.Wait()
-
-	// Joplin tree BEGIN
-
-	var items []joplin.Item
-
-	token, err := joplin.Authenticate(host, tokenLocation)
-	if err != nil {
-		panic(err)
-	}
-
-	folders, err := joplin.GetItems(host, token, "folders")
-	if err != nil {
-		panic(err)
-	}
-
-	notes, err := joplin.GetItems(host, token, "notes")
-	if err != nil {
-		panic(err)
-	}
-
-	items = append(items, folders...)
-	items = append(items, notes...)
-
-	tree := joplin.BuildTree(items)
-	joplin.PrintTree(tree, 0)
 }
 
 type JoplinRoot struct {
 	fs.Inode
+	items []joplin.Item
 }
 
 func (r *JoplinRoot) OnAdd(ctx context.Context) {
@@ -90,6 +90,25 @@ func (r *JoplinRoot) OnAdd(ctx context.Context) {
 		ctx, &fs.Inode{}, fs.StableAttr{Mode: syscall.S_IFDIR})
 	ch2.AddChild("fileInDirectory.txt", ch, false)
 	r.AddChild("directory", ch2, false)
+
+	tree := joplin.BuildTree(r.items)
+
+	for i := range tree {
+		item := tree[i]
+		folderInode := r.NewPersistentInode(
+			ctx, &fs.Inode{}, fs.StableAttr{Mode: syscall.S_IFDIR})
+		r.AddChild(item.Title, folderInode, false)
+
+		for j := range item.Children {
+			child := item.Children[j]
+			childInode := r.NewPersistentInode(
+				ctx, &fs.Inode{}, fs.StableAttr{Mode: syscall.S_IFDIR})
+			folderInode.AddChild(child.Title, childInode, false)
+
+		}
+	}
+
+	log.Println("Add finished")
 }
 
 func (r *JoplinRoot) Getattr(ctx context.Context, fh fs.FileHandle, out *fuse.AttrOut) syscall.Errno {
