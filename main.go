@@ -59,7 +59,13 @@ func main() {
 			Parent_id: notes[i].Parent_id,
 			Title:     notes[i].Title,
 			Children:  notes[i].Children,
-			Body:      noteResponse.Body,
+			File: &fs.MemRegularFile{
+				Data: []byte(noteResponse.Body),
+				Attr: fuse.Attr{
+					Mode: 0444,
+					// TODO: Change the Owner
+				},
+			},
 		}
 
 		items = append(items, &noteNode)
@@ -97,55 +103,35 @@ type JoplinRoot struct {
 }
 
 func (r *JoplinRoot) OnAdd(ctx context.Context) {
-	ch := r.NewPersistentInode(
-		ctx, &fs.MemRegularFile{
-			Data: []byte("Hello World in file.txt\n"),
-			Attr: fuse.Attr{
-				Mode: 0644,
-				// TODO: Change the Owner
-			},
-		}, fs.StableAttr{Ino: 2})
-	r.AddChild("file.txt", ch, false)
-	r.AddChild("file2.txt", ch, false)
-
-	ch2 := r.NewPersistentInode(
-		ctx, &fs.Inode{}, fs.StableAttr{Mode: syscall.S_IFDIR})
-	ch2.AddChild("fileInDirectory.txt", ch, false)
-	r.AddChild("directory", ch2, false)
-
 	tree := joplin.BuildTree(r.items)
 
-	addFolder(ctx, &r.Inode, tree)
+	addNode(ctx, &r.Inode, tree)
 
 	log.Println("Add finished")
 }
 
-func addFolder(ctx context.Context, parentInode *fs.Inode, items []*joplin.Node) {
+func addNode(ctx context.Context, parentInode *fs.Inode, items []*joplin.Node) {
 	for i := range items {
 		child := items[i]
 
-		// TODO: differenciate files and folder
-		childInode := parentInode.NewPersistentInode(
-			ctx, &fs.Inode{}, fs.StableAttr{Mode: syscall.S_IFDIR})
+		switch v := (*child).(type) {
+		case *joplin.FolderNode:
+			childInode := parentInode.NewPersistentInode(
+				ctx, &fs.Inode{}, fs.StableAttr{Mode: syscall.S_IFDIR})
 
-		parentInode.AddChild((*child).Header().Title, childInode, false)
+			parentInode.AddChild(v.Title, childInode, false)
+			addNode(ctx, childInode, v.Children)
+		case *joplin.NoteNode:
+			// childInode := parentInode.NewPersistentInode(
+			// 	ctx, v.File, fs.StableAttr{Ino: 2})
+			childInode := parentInode.NewPersistentInode(
+				ctx, v.File, v.File.StableAttr())
 
-		addFolder(ctx, childInode, (*child).Header().Children)
-	}
-}
-
-// TODO: for later, I have to dowload the file content first
-func addFile(ctx context.Context, parentInode *fs.Inode, items []*joplin.Node) {
-	for i := range items {
-		child := items[i]
-
-		// TODO: differenciate files and folder
-		childInode := parentInode.NewPersistentInode(
-			ctx, &fs.Inode{}, fs.StableAttr{Mode: syscall.S_IFDIR})
-
-		parentInode.AddChild((*child).Header().Title, childInode, false)
-
-		addFile(ctx, childInode, (*child).Header().Children)
+			parentInode.AddChild(v.Title+".md", childInode, false)
+			addNode(ctx, childInode, v.Children)
+		default:
+			panic("not handled")
+		}
 	}
 }
 

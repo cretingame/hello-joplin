@@ -37,7 +37,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(note)
+	fmt.Println(note.Body)
 
 	var nodes []joplin.Node
 

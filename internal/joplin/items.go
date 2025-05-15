@@ -217,7 +217,6 @@ func GetNote(host string, token string, id string) (note NoteResponse, err error
 	return
 }
 
-// TODO: to be tested
 func GetFolder(host string, token string, id string) (folder FolderResponse, err error) {
 	req := fmt.Sprintf("%s/folders/%s?token=%s&fields=title,body", host, id, token)
 	response, err := http.Get(req)

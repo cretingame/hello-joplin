@@ -1,5 +1,7 @@
 package joplin
 
+import "github.com/hanwen/go-fuse/v2/fs"
+
 type Node interface {
 	Header() ItemHeader
 	AddChild(n *Node)
@@ -31,7 +33,7 @@ type NoteNode struct {
 	Title     string
 	Children  []*Node
 
-	Body string // The note body, in Markdown. May also contain HTML.
+	File *fs.MemRegularFile
 }
 
 func (nn NoteNode) Header() ItemHeader {
