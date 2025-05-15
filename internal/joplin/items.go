@@ -182,6 +182,26 @@ func GetFolder(host string, token string, id string) (folder FolderResponse, err
 	return
 }
 
+func GetRessources(host string, token string, id string) (ressource RessourceResponse, err error) {
+	req := fmt.Sprintf("%s/ressources/%s?token=%s&fields=title,body", host, id, token)
+	response, err := http.Get(req)
+	if err != nil {
+		return
+	}
+
+	bs, err := io.ReadAll(response.Body)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(bs, &ressource)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
 func BuildTree(nodes []Node) []*Node {
 	nodeMap := make(map[string]*Node)
 	var roots []*Node

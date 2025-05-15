@@ -80,6 +80,39 @@ func main() {
 		items = append(items, &noteNode)
 	}
 
+	resourceFolderNode := joplin.FolderNode{
+		Id:        ":",
+		Parent_id: "",
+		Name:      ":",
+	}
+	items = append(items, &resourceFolderNode)
+
+	resources, err := joplin.GetItems(host, token, "resources")
+	if err != nil {
+		panic(err)
+	}
+	for i := range resources {
+		ressourceResponse, err := joplin.GetRessources(host, token, resources[i].Id)
+		if err != nil {
+			panic(err)
+		}
+
+		ressourceNode := joplin.RessourceNode{
+			Id:        resources[i].Id,
+			Parent_id: resourceFolderNode.Id,
+			Name:      resources[i].Id,
+			File: &fs.MemRegularFile{
+				Data: []byte(ressourceResponse.Mime),
+				Attr: fuse.Attr{
+					Mode:  0444,
+					Owner: *fuse.CurrentOwner(),
+				},
+			},
+		}
+
+		items = append(items, &ressourceNode)
+	}
+
 	root := JoplinRoot{
 		items: items,
 	}
@@ -179,6 +212,12 @@ func addNode(ctx context.Context, parentInode *fs.Inode, items []*joplin.Node) {
 			parentInode.AddChild(v.Name, childInode, false)
 			addNode(ctx, childInode, v.Children)
 		case *joplin.NoteNode:
+			childInode := parentInode.NewPersistentInode(
+				ctx, v.File, v.File.StableAttr())
+
+			parentInode.AddChild(v.Name, childInode, false)
+			addNode(ctx, childInode, v.Children)
+		case *joplin.RessourceNode:
 			childInode := parentInode.NewPersistentInode(
 				ctx, v.File, v.File.StableAttr())
 

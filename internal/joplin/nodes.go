@@ -55,3 +55,25 @@ func (nn NoteNode) Base() NodeBase {
 func (nn *NoteNode) AddChild(n *Node) {
 	nn.Children = append(nn.Children, n)
 }
+
+type RessourceNode struct {
+	Id        string
+	Parent_id string
+	Name      string
+	Children  []*Node
+
+	File *fs.MemRegularFile
+}
+
+func (rn RessourceNode) Base() NodeBase {
+	return NodeBase{
+		Id:        rn.Id,
+		Parent_id: rn.Parent_id,
+		Name:      rn.Name,
+		Children:  rn.Children,
+	}
+}
+
+func (rn *RessourceNode) AddChild(n *Node) {
+	rn.Children = append(rn.Children, n)
+}
