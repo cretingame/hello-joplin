@@ -208,7 +208,7 @@ func PrintTree(nodes []*Node, level int) {
 		for i := 0; i < level*2; i++ {
 			out = out + " "
 		}
-		out = out + (*node).Base().Title
+		out = out + (*node).Base().Name
 		fmt.Println(out)
 		PrintTree((*node).Base().Children, level+1)
 	}

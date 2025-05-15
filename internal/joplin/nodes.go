@@ -10,14 +10,14 @@ type Node interface {
 type NodeBase struct {
 	Id        string
 	Parent_id string
-	Title     string
+	Name      string
 	Children  []*Node
 }
 
 type FolderNode struct {
 	Id        string
 	Parent_id string
-	Title     string
+	Name      string
 	Children  []*Node
 }
 
@@ -25,7 +25,7 @@ func (fn FolderNode) Base() NodeBase {
 	return NodeBase{
 		Id:        fn.Id,
 		Parent_id: fn.Parent_id,
-		Title:     fn.Title,
+		Name:      fn.Name,
 		Children:  fn.Children,
 	}
 }
@@ -37,7 +37,7 @@ func (fn *FolderNode) AddChild(n *Node) {
 type NoteNode struct {
 	Id        string
 	Parent_id string
-	Title     string
+	Name      string
 	Children  []*Node
 
 	File *fs.MemRegularFile
@@ -47,7 +47,7 @@ func (nn NoteNode) Base() NodeBase {
 	return NodeBase{
 		Id:        nn.Id,
 		Parent_id: nn.Parent_id,
-		Title:     nn.Title,
+		Name:      nn.Name,
 		Children:  nn.Children,
 	}
 }
