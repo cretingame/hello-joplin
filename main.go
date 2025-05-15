@@ -35,16 +35,34 @@ func main() {
 		panic(err)
 	}
 	for i := range folders {
-		items = append(items, &folders[i])
+		folderNode := joplin.FolderNode{
+			Id:        folders[i].Id,
+			Parent_id: folders[i].Parent_id,
+			Title:     folders[i].Title,
+			Children:  folders[i].Children,
+		}
+		items = append(items, &folderNode)
 	}
 
-	// NOTE: I will add notes later because of "/" forbiden in name
 	notes, err := joplin.GetItems(host, token, "notes")
 	if err != nil {
 		panic(err)
 	}
 	for i := range notes {
-		items = append(items, &notes[i])
+		noteResponse, err := joplin.GetNote(host, token, notes[i].Id)
+		if err != nil {
+			panic(err)
+		}
+
+		noteNode := joplin.NoteNode{
+			Id:        notes[i].Id,
+			Parent_id: notes[i].Parent_id,
+			Title:     notes[i].Title,
+			Children:  notes[i].Children,
+			Body:      noteResponse.Body,
+		}
+
+		items = append(items, &noteNode)
 	}
 
 	root := JoplinRoot{
@@ -113,6 +131,21 @@ func addFolder(ctx context.Context, parentInode *fs.Inode, items []*joplin.Node)
 		parentInode.AddChild((*child).Header().Title, childInode, false)
 
 		addFolder(ctx, childInode, (*child).Header().Children)
+	}
+}
+
+// TODO: for later, I have to dowload the file content first
+func addFile(ctx context.Context, parentInode *fs.Inode, items []*joplin.Node) {
+	for i := range items {
+		child := items[i]
+
+		// TODO: differenciate files and folder
+		childInode := parentInode.NewPersistentInode(
+			ctx, &fs.Inode{}, fs.StableAttr{Mode: syscall.S_IFDIR})
+
+		parentInode.AddChild((*child).Header().Title, childInode, false)
+
+		addFile(ctx, childInode, (*child).Header().Children)
 	}
 }
 

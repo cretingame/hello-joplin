@@ -7,11 +7,6 @@ import (
 	"net/http"
 )
 
-type Node interface {
-	Header() ItemHeader
-	AddChild(n *Node)
-}
-
 type ItemHeader struct {
 	Id        string
 	Parent_id string
@@ -42,7 +37,7 @@ type ItemResponse struct {
 	User_data              string
 	Deleted_time           int
 
-	// Added for building tree
+	// Added to build tree
 	Children []*Node
 }
 
@@ -94,6 +89,9 @@ type NoteResponse struct {
 	Base_url               string // If body_html is provided and contains relative URLs, provide the base_url parameter too so that all the URLs can be converted to absolute ones. The base URL is basically where the HTML was fetched from, minus the query (everything after the '?'). For example if the original page was https://stackoverflow.com/search?q=%5Bjava%5D+test, the base URL is https://stackoverflow.com/search.
 	Image_data_url         string // An image to attach to the note, in Data URL format.
 	Crop_rect              string // If an image is provided, you can also specify an optional rectangle that will be used to crop the image. In format { x: x, y: y, width: width, height: height }
+
+	// Added to build tree
+	Children []*Node
 }
 
 func (nr NoteResponse) Header() ItemHeader {
@@ -101,8 +99,12 @@ func (nr NoteResponse) Header() ItemHeader {
 		Id:        nr.Id,
 		Parent_id: nr.Parent_id,
 		Title:     nr.Title,
-		// TODO: Children
+		Children:  nr.Children,
 	}
+}
+
+func (nr *NoteResponse) AddChild(n *Node) {
+	nr.Children = append(nr.Children, n)
 }
 
 type FolderResponse struct {
@@ -121,6 +123,9 @@ type FolderResponse struct {
 	Icon                   string
 	User_data              string
 	Deleted_time           int
+
+	// Added for building tree
+	Children []*Node
 }
 
 func (fr FolderResponse) Header() ItemHeader {
@@ -128,8 +133,12 @@ func (fr FolderResponse) Header() ItemHeader {
 		Id:        fr.Id,
 		Parent_id: fr.Parent_id,
 		Title:     fr.Title,
-		// TODO: Children
+		Children:  fr.Children,
 	}
+}
+
+func (fr *FolderResponse) AddChild(n *Node) {
+	fr.Children = append(fr.Children, n)
 }
 
 type RessourceResponse struct {
@@ -211,7 +220,6 @@ func GetNote(host string, token string, id string) (note NoteResponse, err error
 // TODO: to be tested
 func GetFolder(host string, token string, id string) (folder FolderResponse, err error) {
 	req := fmt.Sprintf("%s/folders/%s?token=%s&fields=title,body", host, id, token)
-	fmt.Println("req", req)
 	response, err := http.Get(req)
 	if err != nil {
 		return
