@@ -61,8 +61,8 @@ func main() {
 			File: &fs.MemRegularFile{
 				Data: []byte(noteResponse.Body),
 				Attr: fuse.Attr{
-					Mode: 0444,
-					// TODO: Change the Owner
+					Mode:  0444,
+					Owner: *fuse.CurrentOwner(),
 				},
 			},
 		}
@@ -79,7 +79,10 @@ func main() {
 	if len(flag.Args()) < 1 {
 		log.Fatal("Usage:\n  hello-joplin MOUNTPOINT")
 	}
-	opts := &fs.Options{}
+	opts := &fs.Options{
+		UID: fuse.CurrentOwner().Uid,
+		GID: fuse.CurrentOwner().Gid,
+	}
 	opts.Debug = *debug
 	server, err := fs.Mount(flag.Arg(0), &root, opts)
 	if err != nil {
