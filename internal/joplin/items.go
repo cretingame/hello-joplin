@@ -7,13 +7,6 @@ import (
 	"net/http"
 )
 
-type ItemHeader struct {
-	Id        string
-	Parent_id string
-	Title     string
-	Children  []*Node
-}
-
 // https://joplinapp.org/fr/help/api/references/rest_api/#properties-1
 type PageResponse struct {
 	Has_more bool
@@ -36,22 +29,6 @@ type ItemResponse struct {
 	Icon                   string
 	User_data              string
 	Deleted_time           int
-
-	// Added to build tree
-	Children []*Node
-}
-
-func (ir ItemResponse) Header() ItemHeader {
-	return ItemHeader{
-		Id:        ir.Id,
-		Parent_id: ir.Parent_id,
-		Title:     ir.Title,
-		Children:  ir.Children,
-	}
-}
-
-func (ir *ItemResponse) AddChild(n *Node) {
-	ir.Children = append(ir.Children, n)
 }
 
 type NoteResponse struct {
@@ -89,22 +66,6 @@ type NoteResponse struct {
 	Base_url               string // If body_html is provided and contains relative URLs, provide the base_url parameter too so that all the URLs can be converted to absolute ones. The base URL is basically where the HTML was fetched from, minus the query (everything after the '?'). For example if the original page was https://stackoverflow.com/search?q=%5Bjava%5D+test, the base URL is https://stackoverflow.com/search.
 	Image_data_url         string // An image to attach to the note, in Data URL format.
 	Crop_rect              string // If an image is provided, you can also specify an optional rectangle that will be used to crop the image. In format { x: x, y: y, width: width, height: height }
-
-	// Added to build tree
-	Children []*Node
-}
-
-func (nr NoteResponse) Header() ItemHeader {
-	return ItemHeader{
-		Id:        nr.Id,
-		Parent_id: nr.Parent_id,
-		Title:     nr.Title,
-		Children:  nr.Children,
-	}
-}
-
-func (nr *NoteResponse) AddChild(n *Node) {
-	nr.Children = append(nr.Children, n)
 }
 
 type FolderResponse struct {
@@ -123,22 +84,6 @@ type FolderResponse struct {
 	Icon                   string
 	User_data              string
 	Deleted_time           int
-
-	// Added for building tree
-	Children []*Node
-}
-
-func (fr FolderResponse) Header() ItemHeader {
-	return ItemHeader{
-		Id:        fr.Id,
-		Parent_id: fr.Parent_id,
-		Title:     fr.Title,
-		Children:  fr.Children,
-	}
-}
-
-func (fr *FolderResponse) AddChild(n *Node) {
-	fr.Children = append(fr.Children, n)
 }
 
 type RessourceResponse struct {
@@ -242,15 +187,14 @@ func BuildTree(nodes []Node) []*Node {
 	var roots []*Node
 
 	for i := range nodes {
-		nodeMap[nodes[i].Header().Id] = &nodes[i]
+		nodeMap[nodes[i].Base().Id] = &nodes[i]
 	}
 
 	for i := range nodes {
-		node := nodeMap[nodes[i].Header().Id]
-		if (*node).Header().Parent_id == "" {
+		node := nodeMap[nodes[i].Base().Id]
+		if (*node).Base().Parent_id == "" {
 			roots = append(roots, node)
-		} else if parent, ok := nodeMap[(*node).Header().Parent_id]; ok {
-			// (*parent).Header().Children = append((*parent).Header().Children, node)
+		} else if parent, ok := nodeMap[(*node).Base().Parent_id]; ok {
 			(*parent).AddChild(node)
 		}
 	}
@@ -264,8 +208,8 @@ func PrintTree(nodes []*Node, level int) {
 		for i := 0; i < level*2; i++ {
 			out = out + " "
 		}
-		out = out + (*node).Header().Title
+		out = out + (*node).Base().Title
 		fmt.Println(out)
-		PrintTree((*node).Header().Children, level+1)
+		PrintTree((*node).Base().Children, level+1)
 	}
 }

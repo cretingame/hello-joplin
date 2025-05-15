@@ -3,8 +3,15 @@ package joplin
 import "github.com/hanwen/go-fuse/v2/fs"
 
 type Node interface {
-	Header() ItemHeader
+	Base() NodeBase
 	AddChild(n *Node)
+}
+
+type NodeBase struct {
+	Id        string
+	Parent_id string
+	Title     string
+	Children  []*Node
 }
 
 type FolderNode struct {
@@ -14,8 +21,8 @@ type FolderNode struct {
 	Children  []*Node
 }
 
-func (fn FolderNode) Header() ItemHeader {
-	return ItemHeader{
+func (fn FolderNode) Base() NodeBase {
+	return NodeBase{
 		Id:        fn.Id,
 		Parent_id: fn.Parent_id,
 		Title:     fn.Title,
@@ -36,8 +43,8 @@ type NoteNode struct {
 	File *fs.MemRegularFile
 }
 
-func (nn NoteNode) Header() ItemHeader {
-	return ItemHeader{
+func (nn NoteNode) Base() NodeBase {
+	return NodeBase{
 		Id:        nn.Id,
 		Parent_id: nn.Parent_id,
 		Title:     nn.Title,

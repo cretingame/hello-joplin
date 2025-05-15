@@ -28,9 +28,10 @@ func main() {
 	fmt.Println(myCat)
 	fmt.Printf("%+v\n", myCat)
 	fmt.Println(myDolphin)
+
+	printName(myCat.Animal)
 }
 
-// NOTE: I cannot use Cat as parameter, I might need generics
 func printName(a Animal) {
 	fmt.Println("The animal name is", a.Name)
 }

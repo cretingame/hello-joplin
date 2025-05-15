@@ -19,6 +19,7 @@ const (
 )
 
 // INFO: I don't why know it was added in the example
+// I think to make `JoplinRoot` compatible with the `InoEmbedded` interface
 var _ = (fs.NodeGetattrer)((*JoplinRoot)(nil))
 var _ = (fs.NodeOnAdder)((*JoplinRoot)(nil))
 
@@ -39,7 +40,6 @@ func main() {
 			Id:        folders[i].Id,
 			Parent_id: folders[i].Parent_id,
 			Title:     folders[i].Title,
-			Children:  folders[i].Children,
 		}
 		items = append(items, &folderNode)
 	}
@@ -58,7 +58,6 @@ func main() {
 			Id:        notes[i].Id,
 			Parent_id: notes[i].Parent_id,
 			Title:     notes[i].Title,
-			Children:  notes[i].Children,
 			File: &fs.MemRegularFile{
 				Data: []byte(noteResponse.Body),
 				Attr: fuse.Attr{
@@ -122,8 +121,6 @@ func addNode(ctx context.Context, parentInode *fs.Inode, items []*joplin.Node) {
 			parentInode.AddChild(v.Title, childInode, false)
 			addNode(ctx, childInode, v.Children)
 		case *joplin.NoteNode:
-			// childInode := parentInode.NewPersistentInode(
-			// 	ctx, v.File, fs.StableAttr{Ino: 2})
 			childInode := parentInode.NewPersistentInode(
 				ctx, v.File, v.File.StableAttr())
 
