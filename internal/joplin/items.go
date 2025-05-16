@@ -86,7 +86,7 @@ type FolderResponse struct {
 	Deleted_time           int
 }
 
-type RessourceResponse struct {
+type ResourceResponse struct {
 	Id                        string
 	Title                     string // The resource title.
 	Mime                      string
@@ -182,8 +182,8 @@ func GetFolder(host string, token string, id string) (folder FolderResponse, err
 	return
 }
 
-func GetRessources(host string, token string, id string) (ressource RessourceResponse, err error) {
-	req := fmt.Sprintf("%s/ressources/%s?token=%s&fields=title,body", host, id, token)
+func GetRessource(host string, token string, id string) (ressource ResourceResponse, err error) {
+	req := fmt.Sprintf("%s/resources/%s?token=%s", host, id, token)
 	response, err := http.Get(req)
 	if err != nil {
 		return
@@ -200,6 +200,16 @@ func GetRessources(host string, token string, id string) (ressource RessourceRes
 	}
 
 	return
+}
+
+func GetRessourceFile(host string, token string, id string) (bs []byte, err error) {
+	req := fmt.Sprintf("%s/resources/%s/file?token=%s", host, id, token)
+	response, err := http.Get(req)
+	if err != nil {
+		return
+	}
+
+	return io.ReadAll(response.Body)
 }
 
 func BuildTree(nodes []Node) []*Node {

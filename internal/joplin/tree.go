@@ -86,7 +86,7 @@ func NewRoot(host string, tokenLocation string) (JoplinRoot, error) {
 		return JoplinRoot{}, err
 	}
 	for i := range resources {
-		ressourceResponse, err := GetRessources(host, token, resources[i].Id)
+		ressourceBytes, err := GetRessourceFile(host, token, resources[i].Id)
 		if err != nil {
 			return JoplinRoot{}, err
 		}
@@ -96,7 +96,7 @@ func NewRoot(host string, tokenLocation string) (JoplinRoot, error) {
 			Parent_id: resourceFolderNode.Id,
 			Name:      resources[i].Id,
 			File: &fs.MemRegularFile{
-				Data: []byte(ressourceResponse.Mime),
+				Data: ressourceBytes,
 				Attr: fuse.Attr{
 					Mode:  0444,
 					Owner: *fuse.CurrentOwner(),

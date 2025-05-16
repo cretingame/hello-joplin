@@ -82,4 +82,7 @@ list_resources() {
 }
 
 # list_folders
-list_resources
+# list_resources
+
+ID=73ca02a59f2741bcb98a77516b85b9a5
+curl "http://localhost:41184/resources/$ID/file?token=$(get_token)"
