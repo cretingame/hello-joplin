@@ -115,7 +115,7 @@ func NewRoot(host string, tokenLocation string) (JoplinRoot, error) {
 func (r *JoplinRoot) OnAdd(ctx context.Context) {
 	tree := BuildTree(r.items)
 
-	addNode(ctx, &r.Inode, tree)
+	addNode(ctx, &r.Inode, tree, 0)
 
 	log.Println("OnAdd finished")
 }
@@ -125,7 +125,7 @@ func (r *JoplinRoot) Getattr(ctx context.Context, fh fs.FileHandle, out *fuse.At
 	return 0
 }
 
-func addNode(ctx context.Context, parentInode *fs.Inode, items []*Node) {
+func addNode(ctx context.Context, parentInode *fs.Inode, items []*Node, level int) {
 	for i := range items {
 		child := items[i]
 
@@ -135,19 +135,31 @@ func addNode(ctx context.Context, parentInode *fs.Inode, items []*Node) {
 				ctx, &fs.Inode{}, fs.StableAttr{Mode: syscall.S_IFDIR})
 
 			parentInode.AddChild(v.Name, childInode, false)
-			addNode(ctx, childInode, v.Children)
+
+			// NOTE: in progress
+			link := ".."
+			for i := 0; i < level; i++ {
+				link = link + "/.."
+			}
+			link = link + "/:"
+			l := &fs.MemSymlink{
+				Data: []byte(link),
+			}
+			symInode := childInode.NewPersistentInode(ctx, l, fs.StableAttr{Mode: syscall.S_IFLNK})
+			childInode.AddChild(":", symInode, false)
+			addNode(ctx, childInode, v.Children, level+1)
 		case *NoteNode:
 			childInode := parentInode.NewPersistentInode(
 				ctx, v.File, v.File.StableAttr())
 
 			parentInode.AddChild(v.Name, childInode, false)
-			addNode(ctx, childInode, v.Children)
+			addNode(ctx, childInode, v.Children, level+1)
 		case *RessourceNode:
 			childInode := parentInode.NewPersistentInode(
 				ctx, v.File, v.File.StableAttr())
 
 			parentInode.AddChild(v.Name, childInode, false)
-			addNode(ctx, childInode, v.Children)
+			addNode(ctx, childInode, v.Children, level+1)
 		default:
 			panic("not handled")
 		}
