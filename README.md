@@ -1,6 +1,6 @@
 # Joplin Fuse
 
-Joplin is an amazing note taking application. I just need an interface to edit and search my notes without using the current user interface. So, I want to instantiate a filesystem that represent my Joplin notes.
+Joplin Fuse is a Go-based tool that mounts your Joplin notes into a filesystem using FUSE (Filesystem in Userspace). This allows you to browse, read, and interact with your Joplin notes as if they were regular files on your system.
 
 ## Features
 
