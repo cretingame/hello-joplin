@@ -1,7 +1,9 @@
-EXEC = hello-joplin
+EXEC = joplin-fuse
 MOUNT_POINT = /run/user/$(shell id -u)/$(EXEC)
+SOURCES = $(shell find . -name "*.go" -not -path "./vendor/*")
 
-$(CURDIR)/$(EXEC): *.go
+
+$(CURDIR)/$(EXEC): $(SOURCES)
 	go build
 
 $(MOUNT_POINT):
@@ -12,7 +14,7 @@ run: $(MOUNT_POINT) $(CURDIR)/$(EXEC)
 
 clean:
 	rm -f $(CURDIR)/$(EXEC)
-	rmdir $(MOUNT_POINT)
+	-rmdir $(MOUNT_POINT)
 
 
-.PHONY: clean
+.PHONY: clean run

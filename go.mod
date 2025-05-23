@@ -1,4 +1,4 @@
-module hello-joplin
+module joplin-fuse
 
 go 1.20
 

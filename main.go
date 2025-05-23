@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"hello-joplin/internal/joplin"
+	"joplin-fuse/internal/joplin"
 	"log"
 	"os"
 	"os/signal"
